@@ -33,7 +33,7 @@ public class ProductFrame extends JFrame { // Product management window
         txtName = new JTextField();
         txtPrice = new JTextField();
         txtQty = new JTextField();
-        JButton btnAdd = new JButton("Add");
+        JButton btnAdd = new JButton("Add item");
         JButton btnUpdate = new JButton("Update");
         JButton btnDelete = new JButton("Delete");
 

@@ -1,59 +1,78 @@
-package src.ui; // Package declaration
+package src.ui;
 
-import src.db.DatabaseConnection; // Import DB helper
-import javax.swing.*; // Import Swing UI classes
-import java.awt.*; // Import layout classes
-import java.sql.*; // Import JDBC classes
+import src.db.DatabaseConnection;
+import src.model.Cart;
 
-public class LoginFrame extends JFrame { // Login window
-    private JTextField txtUser; // Text field for username
-    private JPasswordField txtPass; // Password field
-    private JButton btnLogin; // Login button
+import javax.swing.*;
+import java.awt.*;
+import java.sql.*;
 
-    public LoginFrame() { // Constructor
-        setTitle("Login - E-Commerce"); // Window title
-        setSize(300, 180); // Window size
-        setLayout(new GridLayout(3, 2)); // Layout with 3 rows, 2 columns
-        setDefaultCloseOperation(EXIT_ON_CLOSE); // Close app when window closes
-        setLocationRelativeTo(null); // Center window
+public class LoginFrame extends JFrame {
 
-        add(new JLabel("Username:")); // Label for username
-        txtUser = new JTextField(); // Input field
-        add(txtUser); // Add to layout
+    private JTextField txtUser;
+    private JPasswordField txtPass;
+    private JButton btnLogin;
 
-        add(new JLabel("Password:")); // Label for password
-        txtPass = new JPasswordField(); // Input field
+    public LoginFrame() {
+
+        setTitle("Login - E-Commerce");
+        setSize(300, 180);
+        setLayout(new GridLayout(3, 2));
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+
+        add(new JLabel("Username:"));
+        txtUser = new JTextField();
+        add(txtUser);
+
+        add(new JLabel("Password:"));
+        txtPass = new JPasswordField();
         add(txtPass);
 
-        btnLogin = new JButton("Login"); // Create login button
-        add(new JLabel()); // Empty placeholder
-        add(btnLogin); // Add button to layout
+        btnLogin = new JButton("Login");
+        add(new JLabel());
+        add(btnLogin);
 
-        btnLogin.addActionListener(e -> login()); // When clicked, call login method
-
-        setVisible(true); // Show window
+        btnLogin.addActionListener(e -> login());
+        getRootPane().setDefaultButton(btnLogin);
+        setVisible(true);
     }
 
-    private void login() { // Method to validate login
-        String username = txtUser.getText(); // Get username text
-        String password = String.valueOf(txtPass.getPassword()); // Get password text
+    private void login() {
+        String username = txtUser.getText();
+        String password = new String(txtPass.getPassword());
 
-        try (Connection conn = DatabaseConnection.getConnection()) { // Open DB connection
-            PreparedStatement ps = conn.prepareStatement(
-                "SELECT * FROM users WHERE username=? AND password=?"); // SQL query
-            ps.setString(1, username); // 1 – This refers to the position of the parameter in the SQL query.
-            ps.setString(2, password); // Set password parameter
-            ResultSet rs = ps.executeQuery(); // Execute query
+        if (username.isEmpty() || password.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter username and password");
+            return;
+        }
 
-            if (rs.next()) { // If a row exists, login success
-                JOptionPane.showMessageDialog(this, "Login Successful!"); // Show success message
-                dispose(); // Close login window
-                new ProductFrame(); // Open product management window
-            } else {
-                JOptionPane.showMessageDialog(this, "Invalid credentials!"); // Show error
+        try (Connection conn = DatabaseConnection.getConnection()) {
+
+            if (conn == null) {
+                JOptionPane.showMessageDialog(this, "Cannot connect to database!");
+                return;
             }
+
+            PreparedStatement ps = conn.prepareStatement(
+                "SELECT * FROM users WHERE username=? AND password=?"
+            );
+
+            ps.setString(1, username);
+            ps.setString(2, password);
+
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                JOptionPane.showMessageDialog(this, "Login Successful!");
+                dispose();
+                new ProductFrame(); // Must exist in ui package
+            } else {
+                JOptionPane.showMessageDialog(this, "Invalid credentials!");
+            }
+
         } catch (Exception e) {
-            e.printStackTrace(); // Print DB errors
+            e.printStackTrace();
         }
     }
 }

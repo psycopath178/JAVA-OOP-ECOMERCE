@@ -1,69 +1,225 @@
-package src.dao; // Package declaration
+package src.dao;
 
-import src.model.Product; // Import Product class
-import src.db.DatabaseConnection; // Import DatabaseConnection class
-import java.sql.*; // Import JDBC classes
-import java.util.*; // Import List, ArrayList
+import src.model.Product;
+import src.db.DatabaseConnection;
 
-public class ProductDAO { // DAO class for database operations
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
-    // Retrieve all products from the database
+public class ProductDAO {
+
+    // ===== Get all products =====
     public List<Product> getAllProducts() {
-        List<Product> products = new ArrayList<>(); // Create empty list
-        try (Connection conn = DatabaseConnection.getConnection()) { // Open DB connection
-            PreparedStatement ps = conn.prepareStatement("SELECT * FROM products"); // Prepare SQL query
-            ResultSet rs = ps.executeQuery(); // Execute query and get result set
-            while (rs.next()) { // Iterate through rows
-                products.add(new Product( // Create Product object from row
-                    rs.getInt("id"), // Get id column
-                    rs.getString("name"), // Get name column
-                    rs.getDouble("price"), // Get price column
-                    rs.getInt("quantity") // Get quantity column
-                ));
+        List<Product> list = new ArrayList<>();
+        String sql = "SELECT * FROM products";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
+
+            while (rs.next()) {
+                Product p = new Product();
+                p.setId(rs.getInt("id"));
+                p.setName(rs.getString("name"));
+                p.setCategoryId(rs.getInt("category_id"));
+                p.setBrandId(rs.getInt("brand_id"));
+                p.setSupplierId(rs.getInt("supplier_id"));
+                p.setUnitId(rs.getInt("unit_id"));
+                p.setCost(rs.getDouble("cost"));
+                p.setMarkup(rs.getDouble("markup"));
+                p.setPrice(rs.getDouble("price"));
+                p.setQuantity(rs.getInt("quantity"));
+                p.setDateAdded(rs.getDate("date_added").toLocalDate());
+
+                list.add(p);
             }
-        } catch (Exception e) { // Catch SQL errors
-            e.printStackTrace(); // Print error
+
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-        return products; // Return list of products
+
+        return list;
     }
 
-    // Add a product to the database
-    public void addProduct(Product product) {
-        try (Connection conn = DatabaseConnection.getConnection()) { // Open DB connection
-            PreparedStatement ps = conn.prepareStatement(
-                "INSERT INTO products (name, price, quantity) VALUES (?, ?, ?)"); // SQL insert with placeholders
-            ps.setString(1, product.getName()); // Set name
-            ps.setDouble(2, product.getPrice()); // Set price
-            ps.setInt(3, product.getQuantity()); // Set quantity
-            ps.executeUpdate(); // Execute insert
-        } catch (Exception e) {
-            e.printStackTrace(); // Print error
+    // ===== Add a new product =====
+    public boolean addProduct(Product p) {
+        String sql = "INSERT INTO products(name, category_id, brand_id, supplier_id, unit_id, cost, markup, price, quantity, date_added) " +
+                     "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, p.getName());
+            ps.setInt(2, p.getCategoryId());
+            ps.setInt(3, p.getBrandId());
+            ps.setInt(4, p.getSupplierId());
+            ps.setInt(5, p.getUnitId());
+            ps.setDouble(6, p.getCost());
+            ps.setDouble(7, p.getMarkup());
+            ps.setDouble(8, p.getPrice());
+            ps.setInt(9, p.getQuantity());
+            ps.setDate(10, Date.valueOf(p.getDateAdded()));
+
+            return ps.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
         }
     }
 
-    // Update existing product
-    public void updateProduct(Product product) {
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            PreparedStatement ps = conn.prepareStatement(
-                "UPDATE products SET name=?, price=?, quantity=? WHERE id=?"); // SQL update
-            ps.setString(1, product.getName()); // Set name
-            ps.setDouble(2, product.getPrice()); // Set price
-            ps.setInt(3, product.getQuantity()); // Set quantity
-            ps.setInt(4, product.getId()); // Set id to update
-            ps.executeUpdate(); // Execute update
-        } catch (Exception e) {
-            e.printStackTrace(); // Print error
+    // ===== Update product =====
+    public boolean updateProduct(Product p) {
+        String sql = "UPDATE products SET name=?, category_id=?, brand_id=?, supplier_id=?, unit_id=?, cost=?, markup=?, price=?, quantity=?, date_added=? " +
+                     "WHERE id=?";
+        try (Connection conn = DatabaseConnection.getConnection();
+            PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, p.getName());
+            ps.setInt(2, p.getCategoryId());
+            ps.setInt(3, p.getBrandId());
+            ps.setInt(4, p.getSupplierId());
+            ps.setInt(5, p.getUnitId());
+            ps.setDouble(6, p.getCost());
+            ps.setDouble(7, p.getMarkup());
+            ps.setDouble(8, p.getPrice());
+            ps.setInt(9, p.getQuantity());
+            ps.setDate(10, Date.valueOf(p.getDateAdded()));
+            ps.setInt(11, p.getId());
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
         }
     }
+    public int getProductQuantity(int productId) {
+    String sql = "SELECT quantity FROM products WHERE id = ?";
+    System.out.println("DEBUG: Getting quantity for product ID: " + productId); 
+    System.out.println("DEBUG: SQL: " + sql);
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setInt(1, productId);
+        ResultSet rs = ps.executeQuery();
+        if (rs.next()) {
+            return rs.getInt("quantity");
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return 0; // safer default
+}
+    // ===== Delete product =====
+    public boolean deleteProduct(int id) {
+    String deleteThreshold = "DELETE FROM threshold WHERE id = ?";
+    String deleteProduct = "DELETE FROM products WHERE id = ?";
 
-    // Delete product by id
-    public void deleteProduct(int id) {
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            PreparedStatement ps = conn.prepareStatement("DELETE FROM products WHERE id=?"); // SQL delete
-            ps.setInt(1, id); // Set id
-            ps.executeUpdate(); // Execute delete
-        } catch (Exception e) {
-            e.printStackTrace(); // Print error
+    try (Connection con = DatabaseConnection.getConnection()) {
+        con.setAutoCommit(false);
+
+        try (PreparedStatement ps1 = con.prepareStatement(deleteThreshold);
+             PreparedStatement ps2 = con.prepareStatement(deleteProduct)) {
+
+            ps1.setInt(1, id);
+            ps1.executeUpdate();
+
+            ps2.setInt(1, id);
+            ps2.executeUpdate();
+
+            con.commit();
+            return true;
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return false;
+}
+
+    /*
+    public boolean deleteProduct(int id) {
+        String sql = "DELETE FROM products WHERE id=?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            return ps.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
         }
     }
+     */
+    
+
+    // ===== Get product by ID (optional helper) =====
+    public Product getProductById(int id) {
+        String sql = "SELECT * FROM products WHERE id=?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                Product p = new Product();
+                p.setId(rs.getInt("id"));
+                p.setName(rs.getString("name"));
+                p.setCategoryId(rs.getInt("category_id"));
+                p.setBrandId(rs.getInt("brand_id"));
+                p.setSupplierId(rs.getInt("supplier_id"));
+                p.setUnitId(rs.getInt("unit_id"));
+                p.setCost(rs.getDouble("cost"));
+                p.setMarkup(rs.getDouble("markup"));
+                p.setPrice(rs.getDouble("price"));
+                p.setQuantity(rs.getInt("quantity"));
+                p.setDateAdded(rs.getDate("date_added").toLocalDate());
+                return p;
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+    public boolean isCategoryUsed(int categoryId) {
+    String sql = "SELECT COUNT(*) FROM products WHERE category_id = ?";
+    try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setInt(1, categoryId);
+        ResultSet rs = ps.executeQuery();
+        if (rs.next()) {
+            return rs.getInt(1) > 0;
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return false;
+}
+
+public boolean isBrandUsed(int brandId) {
+    String sql = "SELECT COUNT(*) FROM products WHERE brand_id = ?";
+    try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setInt(1, brandId);
+        ResultSet rs = ps.executeQuery();
+        if (rs.next()) {
+            return rs.getInt(1) > 0;
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return false;
+}
+
+public boolean isSupplierUsed(int supplierId) {
+    String sql = "SELECT COUNT(*) FROM products WHERE supplier_id = ?";
+    try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setInt(1, supplierId);
+        ResultSet rs = ps.executeQuery();
+        if (rs.next()) {
+            return rs.getInt(1) > 0;
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return false;
+}
 }

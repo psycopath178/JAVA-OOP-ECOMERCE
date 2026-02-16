@@ -10,11 +10,11 @@ import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
-public class ProductFrame extends JFrame {
+public class SalesFrame extends JFrame {
     // ===== Components =====
-    private JTable table;
-    private DefaultTableModel model;
-    private JTextField txtName, txtPrice, txtQty;
+    private JTable table, table2;
+    private DefaultTableModel model, model2;
+    private JTextField txtName, txtQty, txtBrand, txtSupplier,txtCategory, txtSelling, txtUnit;
     private JComboBox<Category> cmbCategory;
     private JComboBox<Brand> cmbBrand;
     private JComboBox<Supplier> cmbSupplier;
@@ -23,27 +23,30 @@ public class ProductFrame extends JFrame {
     private JComboBox<String> CategorycmbSortFilter;
     private JComboBox<String> BrandcmbSortFilter;
     private JComboBox<String> SuppliercmbSortFilter;
-    private JTextField txtUnit;
     private JLabel lblDate;
     // ===== DAOs =====
-    private ProductDAO productDAO = new ProductDAO();
+    //private ProductDAO productDAO = new ProductDAO();
     private CategoryDAO categoryDAO = new CategoryDAO();
     private BrandDAO brandDAO = new BrandDAO();
     private SupplierDAO supplierDAO = new SupplierDAO();
-    private CartDAO cartDAO = new CartDAO();
-    private InventoryDAO inventoryDAO = new InventoryDAO();
-    private PracDAO pracDAO = new PracDAO();
     private UnitDAO unitDAO = new UnitDAO();
-    //
+    private CartDAO cartDAO = new CartDAO();
+    private SalesDAO salesDAO = new SalesDAO();
+    private InventoryDAO inventoryDAO = new InventoryDAO();
+    private ProductDAO productDAO = new ProductDAO();
+    private PracDAO pracDAO = new PracDAO();
     private double yourCost;
     private double yourMarkup;
-    private double price;
-    public ProductFrame() {
+    public SalesFrame() {
         setTitle("E-Commerce Product Management");
         setSize(800, 500);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
+        cmbCategory = new JComboBox<>();
+        cmbBrand = new JComboBox<>();
+        cmbSupplier = new JComboBox<>();
+        cmbUnit = new JComboBox<>();
         // ===== Table Panel =====
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         topPanel.add(new JLabel("Filter by Category:"));
@@ -73,23 +76,41 @@ public class ProductFrame extends JFrame {
             BrandcmbSortFilter.addItem(b.getName());
         topPanelmiddle.add(BrandcmbSortFilter);
         //add(topPanelmiddle, BorderLayout.NORTH);
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         searchPanel.add(new JLabel("Search:"));
         JTextField txtSearch = new JTextField(20);
         searchPanel.add(txtSearch);
         JPanel topContainer = new JPanel(new GridLayout(1, 4));
-        topContainer.add(topPanel);        // Category filter
-        topContainer.add(topPanelmiddle);  // Brand filter
+        JButton btnReturn = new JButton("Return to Main");
+        topContainer.setLayout(new BoxLayout(topContainer, BoxLayout.X_AXIS));
+        topContainer.add(topPanel);
+        topContainer.add(Box.createHorizontalStrut(10));
+        topContainer.add(topPanelmiddle);
+        topContainer.add(Box.createHorizontalStrut(10));
         topContainer.add(topPanelRight);
+        topContainer.add(Box.createHorizontalGlue());
         topContainer.add(searchPanel);     // Search bar
-        add(topContainer, BorderLayout.NORTH);
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        bottomPanel.add(btnReturn);
+        JPanel container = new JPanel(new BorderLayout());
+        container.add(topContainer, BorderLayout.NORTH);
+        container.add(bottomPanel, BorderLayout.SOUTH);
+        add(container, BorderLayout.NORTH);
         model = new DefaultTableModel(new String[]{
                 "ID", "Name", "Category", "Brand", "Supplier",
-                "Unit", "Cost Price", "Mark-Up","Selling Price", "Quantity", "Date Added"}, 0);
+                "Unit","Cost Price", "Mark-Up", "Selling Price", "Quantity", "Date Added"}, 0);
         table = new JTable(model);
         sorter = new TableRowSorter<>(model);
         table.setRowSorter(sorter);
+
+        model2 = new DefaultTableModel(new String[]{
+                "ID", "Name", "Category", "Brand", "Supplier",
+                "Unit","Cost Price", "Mark-Up", "Selling Price", "Quantity", "Date Added"}, 0);
+        table2 = new JTable(model2);
+        sorter = new TableRowSorter<>(model2);
+        table2.setRowSorter(sorter);
         loadProducts();
+       // loadimagenary();
         add(new JScrollPane(table), BorderLayout.CENTER);
         // ===== Form Panel =====
         JPanel form = new JPanel(new GridLayout(6, 4, 8, 5));
@@ -98,75 +119,22 @@ public class ProductFrame extends JFrame {
         txtName = new JTextField();
         form.add(txtName);
         form.add(new JLabel("Category:"));
-        cmbCategory = new JComboBox<>();
-        JButton btnAddCategory = new JButton("+");
-        btnAddCategory.setToolTipText("Add New Category");
-        JPanel catPanel = new JPanel(new BorderLayout());
-        catPanel.add(cmbCategory, BorderLayout.CENTER);
-        catPanel.add(btnAddCategory, BorderLayout.EAST);
-        form.add(catPanel);
+        txtCategory = new JTextField();
+        form.add(txtCategory);
         // Row 2
         form.add(new JLabel("Brand:"));
-        cmbBrand = new JComboBox<>();
-        JButton btnAddBrand = new JButton("+");
-        btnAddBrand.setToolTipText("Add New Brand");
-        JPanel brandPanel = new JPanel(new BorderLayout());
-        brandPanel.add(cmbBrand, BorderLayout.CENTER);
-        brandPanel.add(btnAddBrand, BorderLayout.EAST);
-        form.add(brandPanel);
+        txtBrand = new JTextField();
+        form.add(txtBrand);
         form.add(new JLabel("Supplier:"));
-        cmbSupplier = new JComboBox<>();
-        JButton btnAddSupplier = new JButton("+");
-        btnAddSupplier.setToolTipText("Add New Supplier");
-        JPanel supPanel = new JPanel(new BorderLayout());
-        supPanel.add(cmbSupplier, BorderLayout.CENTER);
-        supPanel.add(btnAddSupplier, BorderLayout.EAST);
-        form.add(supPanel);
+        txtSupplier = new JTextField();
+        form.add(txtSupplier);
         // Row 3
         form.add(new JLabel("Unit:"));
-        cmbUnit = new JComboBox<>();
-        JButton btnAddUnit = new JButton("+");
-        btnAddUnit.setToolTipText("Add New Unit");
-        JPanel unitPanel = new JPanel(new BorderLayout());
-        unitPanel.add(cmbUnit, BorderLayout.CENTER);
-        unitPanel.add(btnAddUnit, BorderLayout.EAST);
-        form.add(unitPanel);
-        txtPrice = new JTextField();
-        JButton PriceButton = new JButton("Price Calculator");
-        PriceButton.addActionListener(e -> 
-        {
-            JPanel display = new JPanel(new GridLayout(2,2));
-            JTextField cost = new JTextField();
-            JTextField markup = new JTextField();
-            
-            display.add(new JLabel("Enter Cost: "));
-            display.add(cost);
-            display.add(new JLabel("Enter Mark-Up"));
-            display.add(markup);
-            int result = JOptionPane.showConfirmDialog(
-            null, display, "Enter Price Details", 
-            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE
-            );
-            if (result == JOptionPane.OK_OPTION)
-            {
-                try
-                {
-                    yourCost = Double.parseDouble(cost.getText());
-                    yourMarkup = Double.parseDouble(markup.getText());
-                    double price = yourCost + (yourCost * yourMarkup / 100);
-                    txtPrice.setText(String.format("%.2f", price));
-                }
-                catch (NumberFormatException ex)
-                {
-                    JOptionPane.showMessageDialog(null, "Invalid input! Please enter numbers only.");
-                } 
-            }
-                
-        }
-        );
-        //form.add(new JLabel("Cost (PHP):"));
-        form.add(PriceButton);
-        form.add(txtPrice);
+        txtUnit = new JTextField();
+        form.add(txtUnit);
+        form.add(new JLabel("Selling Price:"));
+        txtSelling = new JTextField();
+        form.add(txtSelling);
         // Row 4
         form.add(new JLabel("Quantity:"));
         txtQty = new JTextField();
@@ -175,46 +143,21 @@ public class ProductFrame extends JFrame {
         lblDate = new JLabel(LocalDate.now().toString());
         form.add(lblDate);
         // Row 5 - Buttons
-        JButton btnAdd = new JButton("Add");
         JButton btnUpdate = new JButton("Update");
         JButton btnDelete = new JButton("Delete");
-        JButton btnSold = new JButton("Add to Cart");
-        JButton btnCart = new JButton("VIEW Cart");
-        JButton btnInventory = new JButton("VIEW Inventory");
-        JButton btnSalesHistory = new JButton("VIEW Sales History");
-        JButton btnManage = new JButton("Manage CBS");
-        form.add(btnAdd);
+        JButton btnSold = new JButton("SOLD");
+        
         form.add(btnUpdate);
         form.add(btnDelete);
         form.add(btnSold);
-        form.add(btnInventory);
-        form.add(btnSalesHistory);
-        form.add(btnManage);
-        JPanel cartPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        cartPanel.add(btnManage);
-        cartPanel.add(btnCart);
-        cartPanel.add(btnInventory);
-        cartPanel.add(btnSalesHistory);
-        JPanel bottomContainer = new JPanel(new BorderLayout());
-        bottomContainer.add(cartPanel, BorderLayout.NORTH);  // View Cart ABOVE
-        bottomContainer.add(form, BorderLayout.CENTER);     // Form BELOW
-
-        add(bottomContainer, BorderLayout.SOUTH);
+        add(form, BorderLayout.SOUTH);
         // ===== Load Dropdowns =====
         loadDropdowns();
         // ===== Button Actions =====
-        btnManage.addActionListener(e->viewManagement());
-        btnCart.addActionListener(e->viewCart());
-        btnInventory.addActionListener(e->viewInventory());
-        btnSalesHistory.addActionListener(e->viewSalesHistory());
-        btnAddCategory.addActionListener(e -> addNewCategory());
-        btnAddBrand.addActionListener(e -> addNewBrand());
-        btnAddSupplier.addActionListener(e -> addNewSupplier());
-        btnAddUnit.addActionListener(e-> addNewUnit());
-        btnAdd.addActionListener(e -> addProduct());
-        btnUpdate.addActionListener(e -> updateProduct());
-        btnDelete.addActionListener(e -> deleteProduct());
-        btnSold.addActionListener(e -> CartProduct());
+        btnReturn.addActionListener(e->returnmain());    
+        btnUpdate.addActionListener(e -> updateCart());
+        btnDelete.addActionListener(e -> deleteCart(0));
+        btnSold.addActionListener(e -> SoldProduct());
         CategorycmbSortFilter.addActionListener(e -> applyFilters());
         BrandcmbSortFilter.addActionListener(e -> applyFilters());
         SuppliercmbSortFilter.addActionListener(e -> applyFilters());
@@ -246,23 +189,34 @@ public class ProductFrame extends JFrame {
                 sorter.setRowFilter(filters.isEmpty() ? null : RowFilter.andFilter(filters));
             }
         });
+        txtName.setEnabled(false);
+        txtUnit.setEnabled(false);
+        txtBrand.setEditable(false);
+        txtCategory.setEditable(false);
+        txtSupplier.setEditable(false);
+        txtSelling.setEditable(false);
+        // Make combo boxes non-editable
+        cmbCategory.setEnabled(false);
+        cmbBrand.setEnabled(false);
+        cmbSupplier.setEnabled(false);
+
         // ===== Table Click =====
         table.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
                 int row = table.getSelectedRow();
-                if (row >= 0) {
+                if (row >= 0) 
+                {
                     int modelRow = table.convertRowIndexToModel(row);
                     txtName.setText(model.getValueAt(row, 1).toString());
-                    cmbCategory.setSelectedItem(model.getValueAt(row, 2));
-                    cmbBrand.setSelectedItem(model.getValueAt(row, 3));
-                    cmbSupplier.setSelectedItem(model.getValueAt(row, 4));
-                    cmbUnit.setSelectedItem(model.getValueAt(row, 5));
-                    //txtUnit.setText(model.getValueAt(row, 5).toString());
+                    txtCategory.setText(model.getValueAt(row, 2).toString());
+                    txtBrand.setText(model.getValueAt(row, 3).toString());
+                    txtSupplier.setText(model.getValueAt(row, 4).toString());
+                    txtUnit.setText(model.getValueAt(row, 5).toString());
                     String costStr = model.getValueAt(modelRow, 6).toString().replace("₱", "").replace(",", "").trim();
                     String markupStr = model.getValueAt(modelRow, 7).toString().replace("₱", "").replace(",", "").trim();
                     yourCost = Double.parseDouble(costStr);
                     yourMarkup = Double.parseDouble(markupStr);
-                    txtPrice.setText(model.getValueAt(row, 8).toString().replace("PHP ", ""));
+                    txtSelling.setText(model.getValueAt(row, 8).toString());
                     txtQty.setText(model.getValueAt(row, 9).toString());
                     lblDate.setText(model.getValueAt(row, 10).toString());
                 }
@@ -271,6 +225,11 @@ public class ProductFrame extends JFrame {
         setVisible(true);
     }
     // ===== FILTERS =====
+private void returnmain()
+{
+    dispose();
+    new ProductFrame();
+}
 private void applyFilters() 
 {
     List<RowFilter<Object, Object>> filters = new java.util.ArrayList<>();
@@ -289,9 +248,9 @@ private void applyFilters()
 private void loadProducts() 
 {
     model.setRowCount(0);
-    List<Product> products = productDAO.getAllProducts();
-    //NumberFormat currency = NumberFormat.getCurrencyInstance(new Locale("en", "PH"));
-    for (Product p : products) 
+    List<Prac> sale = pracDAO.getAllCart();
+   // NumberFormat currency = NumberFormat.getCurrencyInstance(new Locale("en", "PH"));
+    for (Prac p : sale) 
     {
         Category cat = categoryDAO.getCategoryById(p.getCategoryId());
         Brand brand = brandDAO.getBrandById(p.getBrandId());
@@ -301,11 +260,37 @@ private void loadProducts()
         {
             p.getId(),
             p.getName(),
+            cat.getName(),
+            brand.getName(),
+            sup.getName(),
+            unit.getName(),
+            p.getCost(),
+            p.getMarkup(),
+            p.getPrice(),
+            p.getQuantity(),
+            p.getDateAdded()
+        });
+    }
+}
+private void loadimagenary() 
+{
+    model2.setRowCount(0);
+    List<Product> products = productDAO.getAllProducts();
+    //NumberFormat currency = NumberFormat.getCurrencyInstance(new Locale("en", "PH"));
+    for (Product p : products) 
+    {
+        Category cat = categoryDAO.getCategoryById(p.getCategoryId());
+        Brand brand = brandDAO.getBrandById(p.getBrandId());
+        Supplier sup = supplierDAO.getSupplierById(p.getSupplierId());
+        Unit unit = unitDAO.getUnitById(p.getUnitId());
+        model2.addRow(new Object[]
+        {
+            p.getId(),
+            p.getName(),
             cat,
             brand,
             sup,
             unit,
-           // p.getUnit(),
             p.getCost(),
             p.getMarkup(),
             p.getPrice(),
@@ -327,101 +312,61 @@ private void loadDropdowns()
     for (Unit u : unitDAO.getAllUnit()) cmbUnit.addItem(u);
 }
 // ===== Add Product =====
-private void viewManagement()
-{
-    dispose();
-    new ManageFrame();
-}
-private void viewCart()
-{
-    dispose();
-    new SalesFrame();
-}
-private void viewInventory()
-{
-    dispose();
-    new InventoryFrame();
-}
-private void viewSalesHistory()
-{
-    dispose();
-    new HistoryFrame();
-}
-private void addProduct() 
+private void SoldProduct() 
 {
     try 
     {
-        Product p = new Product();
-        Inventory i = new Inventory();
+        Sales p = new Sales();
+        Product i = new Product();
         p.setName(txtName.getText());
         p.setCategoryId(((Category)cmbCategory.getSelectedItem()).getId());
         p.setBrandId(((Brand)cmbBrand.getSelectedItem()).getId());
         p.setSupplierId(((Supplier)cmbSupplier.getSelectedItem()).getId());
         p.setUnitId(((Unit)cmbUnit.getSelectedItem()).getId());
-      //  p.setUnit(txtUnit.getText());
         p.setCost(yourCost);
         p.setMarkup(yourMarkup);
-        p.setPrice(Double.parseDouble(txtPrice.getText()));
+        p.setPrice(Double.parseDouble(txtSelling.getText()));
         p.setQuantity(Integer.parseInt(txtQty.getText()));
         p.setDateAdded(LocalDate.now());
-        //Inventory
-        i.setName(p.getName());
-        i.setCategoryId(p.getCategoryId());
-        i.setBrandId(p.getBrandId());
-        i.setSupplierId(p.getSupplierId());
-        i.setUnitId(p.getUnitId());
+        int viewRow = table.getSelectedRow();
+        if (viewRow < 0) return;
+        int modelRow = table.convertRowIndexToModel(viewRow);
+        int productId = (int) model.getValueAt(modelRow, 0);
+        int currentQty = productDAO.getProductQuantity(productId);
+        int soldQty = Integer.parseInt(txtQty.getText());
+        System.out.println("Product ID: " + productId);
+        System.out.println("Current Qty from DB: " + currentQty);
+        System.out.println("Sold Qty requested: " + soldQty);
+        System.out.println("Sold Qty > Current Qty? " + (soldQty > currentQty));
+        if (soldQty > currentQty) {
+            JOptionPane.showMessageDialog(this, "Insufficient stock!");
+            return;
+        }
+        i.setId((int) model.getValueAt(modelRow, 0));
+        i.setName(txtName.getText());
+        i.setCategoryId(((Category)cmbCategory.getSelectedItem()).getId());
+        i.setBrandId(((Brand)cmbBrand.getSelectedItem()).getId());
+        i.setSupplierId(((Supplier)cmbSupplier.getSelectedItem()).getId());
+        i.setUnitId(((Unit)cmbUnit.getSelectedItem()).getId());
         i.setCost(yourCost);
         i.setMarkup(yourMarkup);
-        i.setPrice(p.getPrice());
-        i.setQuantity(p.getQuantity());
-        i.setDateAdded(LocalDate.now());
-        if(ConfirmationAction("Add"))
+        i.setPrice(Double.parseDouble(txtSelling.getText()));
+        i.setQuantity(currentQty - soldQty);
+        i.setDateAdded(LocalDate.parse(lblDate.getText()));
+        if(ConfirmationAction("Sold"))
         {
-            if(productDAO.addProduct(p)) 
+           // deleteCart(1);
+            delete(viewRow);
+            if(salesDAO.addSales(p))
             {
-                inventoryDAO.addInventory(i);
-                JOptionPane.showMessageDialog(this, "Product added!");
-                loadProducts();
-            }
-        }
-        else
-        {
-            JOptionPane.showMessageDialog(this, "Add Product failed!");
-        }
-        
-    } catch (Exception ex) 
-    {
-        JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
-    }
-}
-private void CartProduct() 
-{
-    try 
-    {
-        int row = table.getSelectedRow();
-        Prac p = new Prac();
-        p.setId((int) model.getValueAt(row, 0));
-        p.setName(txtName.getText());
-        p.setCategoryId(((Category)cmbCategory.getSelectedItem()).getId());
-        p.setBrandId(((Brand)cmbBrand.getSelectedItem()).getId());
-        p.setSupplierId(((Supplier)cmbSupplier.getSelectedItem()).getId());
-        p.setUnitId(((Unit)cmbUnit.getSelectedItem()).getId());
-        p.setCost(yourCost);
-        p.setMarkup(yourMarkup);
-        p.setPrice(Double.parseDouble(txtPrice.getText()));
-        p.setQuantity(Integer.parseInt(txtQty.getText()));
-        p.setDateAdded(LocalDate.now());
-        if(ConfirmationAction("Cart"))
-        {
-            if(pracDAO.addCart(p))
-            {
-                JOptionPane.showMessageDialog(this, "Product to Cart!");
+                productDAO.updateProduct(i);
+                JOptionPane.showMessageDialog(this, "Product Sold!");
                 loadProducts();
             }
         }
         else 
         {
-            JOptionPane.showMessageDialog(this, "Cart failed!");
+            JOptionPane.showMessageDialog(this, "Sold failed!");
         }
     } catch (Exception ex) 
     {
@@ -429,28 +374,26 @@ private void CartProduct()
     }
 }
 // ===== Update Product =====
-private void updateProduct() 
+private void updateCart() 
 {
     int row = table.getSelectedRow();
     if(row >= 0) 
     {
         try 
         {
-            Product p = new Product();
+            Prac p = new Prac();
             p.setId((int) model.getValueAt(row, 0));
             p.setName(txtName.getText());
             p.setCategoryId(((Category)cmbCategory.getSelectedItem()).getId());
             p.setBrandId(((Brand)cmbBrand.getSelectedItem()).getId());
             p.setSupplierId(((Supplier)cmbSupplier.getSelectedItem()).getId());
             p.setUnitId(((Unit)cmbUnit.getSelectedItem()).getId());
-            p.setCost(yourCost);
-            p.setMarkup(yourMarkup);
-            p.setPrice(Double.parseDouble(txtPrice.getText()));
+            p.setPrice(Double.parseDouble(txtSelling.getText()));
             p.setQuantity(Integer.parseInt(txtQty.getText()));
             p.setDateAdded(LocalDate.parse(lblDate.getText()));
             if(ConfirmationAction("Update"))
             {
-                if(productDAO.updateProduct(p)) 
+                if(pracDAO.updateCart(p)) 
                 {
                     JOptionPane.showMessageDialog(this, "Product updated!");
                     loadProducts();
@@ -458,8 +401,9 @@ private void updateProduct()
             }
             else 
             {
-                JOptionPane.showMessageDialog(this, "Sold failed!");
-            }   
+                JOptionPane.showMessageDialog(this, "Update failed!");
+            }
+            
         } catch (Exception ex) 
         {
             JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
@@ -467,17 +411,30 @@ private void updateProduct()
     }
 }
     // ===== Delete Product =====
-private void deleteProduct() 
+private void delete(int row)
+{
+    if(row >= 0) 
+    {
+        int id = (int) model.getValueAt(row, 0);
+        pracDAO.deleteCart(id);
+    }
+}
+private void deleteCart(int signal) 
 {
     int row = table.getSelectedRow();
     if(row >= 0) 
     {
         int id = (int) model.getValueAt(row, 0);
+        if(signal == 1)
+        {
+            cartDAO.deleteCart(id);
+            return;
+        }
         if(ConfirmationAction("Delete"))
         {
-            if(productDAO.deleteProduct(id))
+            if(cartDAO.deleteCart(id))
             {
-                JOptionPane.showMessageDialog(this, "Product deleted!");
+                JOptionPane.showMessageDialog(this, "Product deleted from Cart!");
                 loadProducts();
             }
         }
@@ -513,16 +470,6 @@ private void addNewSupplier() {
     String name = JOptionPane.showInputDialog(this, "Enter new supplier:");
     if(name != null && !name.isBlank()) {
         if(supplierDAO.addSupplier(new Supplier(0, name))) {
-            JOptionPane.showMessageDialog(this, "Supplier added!");
-            loadDropdowns();
-        }
-    }
-}
-
-private void addNewUnit() {
-    String name = JOptionPane.showInputDialog(this, "Enter new supplier:");
-    if(name != null && !name.isBlank()) {
-        if(unitDAO.addUnit(new Unit(0, name))) {
             JOptionPane.showMessageDialog(this, "Supplier added!");
             loadDropdowns();
         }

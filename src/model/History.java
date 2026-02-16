@@ -2,43 +2,37 @@ package src.model;
 
 import java.time.LocalDate;
 
-public class Product {
+public class History {
     private int id;
-  //  private int productId;
     private String name;
     private int categoryId;
     private int brandId;
     private int supplierId;
     private int UnitId;
- //   private String unit;
+    private double price;
     private double cost;
     private double markup;
-    private double price;
     private int quantity;
     private LocalDate dateAdded;
-
-    public Product() {}
-
-    public Product(int id,String name, int categoryId, int brandId, int supplierId, int UnitId,
-                double cost, double markup, double price, int quantity, LocalDate dateAdded) {
+    public History() {}
+    public History(int id, String name, int categoryId, int brandId, int supplierId,
+                   int UnitId,double cost, double markup, double price, int quantity, LocalDate dateAdded) {
         this.id = id;
         this.name = name;
         this.categoryId = categoryId;
         this.brandId = brandId;
         this.supplierId = supplierId;
         this.UnitId = UnitId;
-       // this.unit = unit;
         this.cost = cost;
         this.markup = markup;
         this.price = price;
         this.quantity = quantity;
         this.dateAdded = dateAdded;
     }
-
     // Getters and setters
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
-    
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
@@ -53,9 +47,6 @@ public class Product {
 
     public int getUnitId() { return UnitId; }
     public void setUnitId(int UnitId) { this.UnitId = UnitId; }
-
-   // public String getUnit() { return unit; }
-  //  public void setUnit(String unit) { this.unit = unit; }
 
     public double getCost() { return cost; }
     public void setCost(double cost) { this.cost = cost; }

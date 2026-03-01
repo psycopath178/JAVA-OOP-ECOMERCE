@@ -1,0 +1,5 @@
+"id";"name";"category_id";"brand_id";"supplier_id";"unit";"cost";"markup";"price";"quantity";"date_added"
+9;"ube";1;1;1;"area";60.0;84.5;110.7;14;"2025-11-30"
+10;"ube";1;1;1;"area";60.0;84.5;110.7;14;"2025-11-30"
+13;"brownies";1;1;1;"23";320.0;100.0;640.0;12;"2025-11-30"
+14;"leche flan";1;1;1;"area";60.0;84.0;110.4;5;"2025-12-13"
